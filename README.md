@@ -11,40 +11,35 @@ Build a GUI-based calendar application in Java that supports local event managem
 - **Database:** SQLite
 - **Project Type:** Standalone desktop application
 
-## ✅ Current Progress
 
-- Basic GUI created with:
-  - `JFrame` for the main window
-  - `JPanel` as layout container
-  - `JLabel` for the welcome message
-  - `JButton` for event creation
+## 🗃 Database
 
-- SQLite database (`calendar.db`) setup:
+The calendar application uses **SQLite** to store event data persistently. SQLite is a lightweight, serverless database that stores data in a local file, making it a great fit for a desktop application like this.
 
-  ```sql
-  CREATE TABLE events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      date TEXT NOT NULL,
-      time TEXT NOT NULL,
-      description TEXT
-  );
-  ```
+### Database Structure
 
-## 🧭 Next Steps
+The database consists of a single table, `events`, with the following columns:
 
-- [ ] Implement dialog to add events  
-- [ ] Display events for selected date  
-- [ ] Add edit/delete functionality  
+- **id** (INTEGER): A unique identifier for each event (Primary Key).
+- **title** (TEXT): The title or name of the event.
+- **date** (TEXT): The date of the event (formatted as `YYYY-MM-DD`).
+- **time** (TEXT): The time of the event (formatted as `HH:MM`).
+- **description** (TEXT): A short description or additional details about the event.
 
-## 🗂 Feature Roadmap
+The table will be created automatically if it doesn't already exist when the application first runs.
 
-| Feature            | Status     |
-|--------------------|------------|
-| GUI Setup          | 🔜 Planned |
-| Add Event Dialog   | 🔜 Planned |
-| Event Listing      | 🔜 Planned |
-| Edit/Delete Event  | 🔜 Planned |
+SQL Statement to Create the Table:
+```sql
+CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    date TEXT NOT NULL,
+    time TEXT NOT NULL,
+    description TEXT
+);
+```
+---
+
 
 ---
 
@@ -111,7 +106,3 @@ Build a GUI-based calendar application in Java that supports local event managem
   - Allow date selection and visualize events
 
 ---
-
-## ✍️ Author
-
-This project is developed as a learning exercise to become proficient in Java GUI development and working with databases.
