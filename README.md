@@ -1,17 +1,8 @@
-# 📅 Just Calendar Project – Overview
+# 📅 Java Calendar Project – Overview
 
 ## 🎯 Goal
 
-This project aims to build a desktop-based calendar application using Java with a graphical user interface (GUI) implemented via Swing, and event data storage handled through SQLite. It is designed primarily as a hands-on learning experience to explore the Java language and its ecosystem.
-
-The core features will include the ability to:
-
-- View a monthly calendar layout
-- Add, edit, and delete appointments
-- Store events persistently in a local SQLite database
-
-This application is intentionally kept local (no server or cloud) to focus purely on the Java language, object-oriented programming (OOP) principles, and integrating database functionality into desktop software.
-
+Build a GUI-based calendar application in Java that supports local event management using SQLite. This project serves as a learning platform for Java, Swing, and database integration.
 
 ## 🧰 Technologies
 
