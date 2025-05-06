@@ -1,16 +1,14 @@
-# 📅 Java Calendar Project – Overview
+# 📅 Java Calendar Project
 
 ## 🎯 Goal
 
-Build a GUI-based calendar application in Java that supports local event management using SQLite. This project serves as a learning platform for Java, Swing, and database integration.
+Build a GUI-based calendar application in Java that supports local event management using SQLite. 
 
 ## 🧰 Technologies
 
 - **Language:** Java 
 - **GUI Toolkit:** Swing
 - **Database:** SQLite
-- **Project Type:** Standalone desktop application
-
 
 ## 🗃 Database
 
@@ -25,22 +23,6 @@ The database consists of a single table, `events`, with the following columns:
 - **date** (TEXT): The date of the event (formatted as `YYYY-MM-DD`).
 - **time** (TEXT): The time of the event (formatted as `HH:MM`).
 - **description** (TEXT): A short description or additional details about the event.
-
-The table will be created automatically if it doesn't already exist when the application first runs.
-
-SQL Statement to Create the Table:
-```sql
-CREATE TABLE IF NOT EXISTS events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    date TEXT NOT NULL,
-    time TEXT NOT NULL,
-    description TEXT
-);
-```
----
-
-
 ---
 
 # 🧩 Planned Class Structure
