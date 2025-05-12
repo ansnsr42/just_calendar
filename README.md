@@ -4,6 +4,18 @@
 
 Build a GUI-based calendar application in Java that supports local event management using SQLite. 
 
+## 🚀 Quick start
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/ansnsr42/just_calendar.git
+cd just_calendar
+
+# 2. Build and run
+mvn clean package     # compiles into target/
+mvn exec:java         # launches the calendar
+
+```
 ## 🧰 Technologies
 
 - **Language:** Java 
