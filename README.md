@@ -4,6 +4,17 @@
 
 Build a GUI-based calendar application in Java that supports local event management using SQLite. 
 
+---
+
+## 🔧 Requirements
+
+| Tool  | Minimum version | Check command        |
+|-------|-----------------|----------------------|
+| JDK   | **17** or newer | `java -version`      |
+| Maven | **3.9**         | `mvn -version`       |
+
+---
+
 ## 🚀 Quick start
 
 ```bash
