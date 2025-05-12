@@ -1,10 +1,15 @@
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
+import com.formdev.flatlaf.FlatLightLaf;   
 
 public class CalendarApp {
 
+    
+
     public static void main(String[] args) {
+        FlatLightLaf.setup();               // << hier einfügen
+
         SwingUtilities.invokeLater(CalendarApp::erstelleUndZeigeGUI);
     }
 
