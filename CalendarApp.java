@@ -1,30 +1,41 @@
 import javax.swing.*;
 import java.awt.*;
+import java.time.LocalDate;
+
 public class CalendarApp {
 
-    // Main driver method
-    public static void main(String[] args)
-    {
-        // Event-Dispatch-Thread (EDT) 
-        SwingUtilities.invokeLater(CalendarApp::createAndShowGUI);
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(CalendarApp::erstelleUndZeigeGUI);
     }
-        /// GUI 
-    private static void createAndShowGUI() {
-        JFrame frame = new JFrame("Kalender");
+
+    private static void erstelleUndZeigeGUI() {
+        JFrame frame = new JFrame("Java‑Kalender");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 400);
-        
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout());
-        
-        JLabel label = new JLabel("Willkommen zum Kalender", SwingConstants.CENTER);
-        panel.add(label, BorderLayout.CENTER);
-        
-        JButton addButton = new JButton("Neuer Termin");
-        panel.add(addButton, BorderLayout.SOUTH);
-        
-        frame.add(panel);
+        frame.setSize(800, 600);
+
+        /* linke Seite: Monatsraster */
+        JTextArea tagesAnsicht = new JTextArea();
+        tagesAnsicht.setEditable(false);
+        tagesAnsicht.setLineWrap(true);
+
+        CalendarView monatView = new CalendarView(datum -> {
+            // — Platzhalter, später Daten aus DatabaseManager holen —
+            tagesAnsicht.setText("Termine am " + datum + ":\n(demnächst …)");
+        });
+
+        /* rechte Seite: Tagesdetails */
+        JPanel rechts = new JPanel(new BorderLayout());
+        rechts.setPreferredSize(new Dimension(250, 0));
+        rechts.add(new JLabel("Tagesansicht", SwingConstants.CENTER),
+                   BorderLayout.NORTH);
+        rechts.add(new JScrollPane(tagesAnsicht), BorderLayout.CENTER);
+
+        /* Hauptaufbau */
+        frame.setLayout(new BorderLayout());
+        frame.add(monatView, BorderLayout.CENTER);
+        frame.add(rechts,    BorderLayout.EAST);
+
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 }
-    /// Db anbindung
