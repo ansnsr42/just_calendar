@@ -1,27 +1,22 @@
 import com.formdev.flatlaf.FlatLightLaf;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.*;
+import java.util.Set;
 
 public class CalendarApp {
 
-    /* ---------------- Feldvariablen ---------------- */
     private static DatabaseManager db;
+    private static CalendarView monthView;
     private static JTextArea dayArea;
     private static LocalDate selectedDate;
 
     public static void main(String[] args) {
-        /* Modernes Look‑and‑Feel */
         FlatLightLaf.setup();
-
         SwingUtilities.invokeLater(() -> {
             db = new DatabaseManager();
             try { db.connect(); } catch (SQLException ex) { showError("DB‑Verbindung fehlgeschlagen:\n" + ex); }
-
             createAndShowGUI();
         });
     }
@@ -32,11 +27,30 @@ public class CalendarApp {
         frame.setSize(900, 600);
         frame.setLayout(new BorderLayout());
 
-        /* ----------- rechter Bereich: Tagesansicht + Button ----------- */
+        /* Tagesansicht */
         dayArea = new JTextArea("Wähle links ein Datum…");
         dayArea.setEditable(false);
         dayArea.setLineWrap(true);
 
+        /* Monatsansicht */
+        YearMonth ym = YearMonth.now();
+        Set<LocalDate> busy = Set.of();
+        try { busy = db.getEventDatesOfMonth(ym); } catch (SQLException ignored) {}
+
+        monthView = new CalendarView(
+            ym,
+            busy,
+            date -> { selectedDate = date; refreshDayView(date); },
+            newMonth -> {
+                try {
+                    Set<LocalDate> b = db.getEventDatesOfMonth(newMonth);
+                    monthView.updateBusyDays(b);
+                } catch (SQLException ex) {
+                    showError("Fehler beim Laden der Monatsdaten:\n" + ex.getMessage());
+                }
+            });
+
+        /* rechte Spalte */
         JButton addBtn = new JButton("Neuer Termin");
         addBtn.addActionListener(e -> quickAddDialog());
 
@@ -46,28 +60,13 @@ public class CalendarApp {
         right.add(new JScrollPane(dayArea), BorderLayout.CENTER);
         right.add(addBtn, BorderLayout.SOUTH);
 
-        /* ----------- linker Bereich: Monatsübersicht ----------- */
-        CalendarView monthView = new CalendarView(date -> {
-            selectedDate = date;
-            refreshDayView(date);
-        });
-
-        /* ----------- zusammensetzen ----------- */
         frame.add(monthView, BorderLayout.CENTER);
         frame.add(right,     BorderLayout.EAST);
         frame.setLocationRelativeTo(null);
-
-        /* DB sauber schließen, wenn Fenster zu */
-        frame.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                try { db.close(); } catch (SQLException ignored) {}
-            }
-        });
-
         frame.setVisible(true);
     }
 
-    /* ---------- Hilfsfunktionen ---------- */
+    /* ---------- Helper‑Methoden ---------- */
 
     private static void refreshDayView(LocalDate date) {
         try {
@@ -84,10 +83,9 @@ public class CalendarApp {
         }
     }
 
-    /** Schneller Eingabedialog (ohne eigenes JDialog‑Formular) */
     private static void quickAddDialog() {
         if (selectedDate == null) {
-            showError("Bitte zuerst ein Datum in der Monatsansicht anklicken.");
+            showError("Bitte zuerst ein Datum auswählen.");
             return;
         }
         JTextField titleF = new JTextField();
@@ -95,12 +93,12 @@ public class CalendarApp {
         JTextField descF  = new JTextField();
 
         JPanel panel = new JPanel(new GridLayout(0, 1, 4, 4));
-        panel.add(new JLabel("Titel:"));        panel.add(titleF);
-        panel.add(new JLabel("Uhrzeit (HH:MM):")); panel.add(timeF);
-        panel.add(new JLabel("Beschreibung:")); panel.add(descF);
+        panel.add(new JLabel("Titel:"));            panel.add(titleF);
+        panel.add(new JLabel("Uhrzeit (HH:MM):"));  panel.add(timeF);
+        panel.add(new JLabel("Beschreibung:"));     panel.add(descF);
 
         int res = JOptionPane.showConfirmDialog(null, panel,
-                "Neuen Termin am " + selectedDate + " anlegen", JOptionPane.OK_CANCEL_OPTION);
+                "Neuer Termin am " + selectedDate, JOptionPane.OK_CANCEL_OPTION);
         if (res == JOptionPane.OK_OPTION) {
             try {
                 var ev = new Event(
@@ -110,6 +108,8 @@ public class CalendarApp {
                         descF.getText().strip());
                 db.addEvent(ev);
                 refreshDayView(selectedDate);
+                // Busy‑Punkt updaten
+                monthView.updateBusyDays(db.getEventDatesOfMonth(YearMonth.from(selectedDate)));
             } catch (Exception ex) {
                 showError("Termin konnte nicht gespeichert werden:\n" + ex.getMessage());
             }
@@ -120,3 +120,4 @@ public class CalendarApp {
         JOptionPane.showMessageDialog(null, msg, "Fehler", JOptionPane.ERROR_MESSAGE);
     }
 }
+

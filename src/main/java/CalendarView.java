@@ -1,40 +1,56 @@
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.time.*;
 import java.time.format.TextStyle;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class CalendarView extends JPanel {
 
-    private YearMonth aktuellerMonat = YearMonth.now();
-    private final Consumer<LocalDate> onDateSelected;
+    private YearMonth month;
+    private Set<LocalDate> busyDays;
+    private final Consumer<LocalDate> onSelect;
+    private final Consumer<YearMonth> onMonthChange;
 
-    /* Farbpalette */
-    private static final Color PRIMARY      = new Color(0x3B82F6);  // blau
+    /* Farbschema */
+    private static final Color PRIMARY      = new Color(0x3B82F6);
     private static final Color PRIMARY_TEXT = Color.WHITE;
-    private static final Color HOVER_BG     = new Color(0xE0E7FF);  // hell‑blau
-    private static final Color WEEKEND_TXT  = new Color(0x9CA3AF);  // grau
+    private static final Color HOVER_BG     = new Color(0xE0E7FF);
+    private static final Color WEEKEND_TXT  = new Color(0x9CA3AF);
+    private static final Color UNDERLINE    = new Color(0xEF4444);   // Rot
 
-    public CalendarView(Consumer<LocalDate> onDateSelected) {
-        this.onDateSelected = onDateSelected;
+    /* Unterstrich‑Border vorbereiten */
+    private static final Border BUSY_BORDER =
+            BorderFactory.createMatteBorder(0, 0, 2, 0, UNDERLINE);
+
+    /* -------- Konstruktor -------- */
+    public CalendarView(YearMonth month,
+                        Set<LocalDate> busyDays,
+                        Consumer<LocalDate> onSelect,
+                        Consumer<YearMonth> onMonthChange) {
+        this.month         = month;
+        this.busyDays      = busyDays;
+        this.onSelect      = onSelect;
+        this.onMonthChange = onMonthChange;
+
         setOpaque(false);
         setLayout(new BorderLayout(0, 10));
         add(buildHeader(), BorderLayout.NORTH);
         add(buildGrid(),   BorderLayout.CENTER);
     }
 
-    /* Kopf mit Monatstitel + Pfeilen */
+    /* -------- Kopf -------- */
     private JPanel buildHeader() {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
 
-        JButton prev = navButton("<");
-        JButton next = navButton(">");
+        JButton prev = navBtn("<");
+        JButton next = navBtn(">");
 
-        JLabel title = new JLabel(formatMonth(aktuellerMonat),
-                                  SwingConstants.CENTER);
+        JLabel title = new JLabel(formatMonth(month), SwingConstants.CENTER);
         title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
 
         prev.addActionListener(e -> changeMonth(-1, title));
@@ -46,42 +62,90 @@ public class CalendarView extends JPanel {
         return p;
     }
 
-    /* Raster */
+    /* -------- Raster -------- */
     private JPanel buildGrid() {
-        JPanel grid = new JPanel(new GridLayout(0, 7, 4, 4));
-        grid.setOpaque(false);
+        JPanel g = new JPanel(new GridLayout(0, 7, 4, 4));
+        g.setOpaque(false);
 
-        // Wochentagsköpfe
         for (DayOfWeek d : DayOfWeek.values()) {
             JLabel lbl = new JLabel(d.getDisplayName(TextStyle.SHORT, Locale.getDefault()).toUpperCase(),
                                     SwingConstants.CENTER);
             lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 12f));
             lbl.setForeground(WEEKEND_TXT.darker());
-            grid.add(lbl);
+            g.add(lbl);
         }
 
-        LocalDate firstDay = aktuellerMonat.atDay(1);
-        int shift = firstDay.getDayOfWeek().getValue() - 1; // Sonntag = 0
-        for (int i = 0; i < shift; i++) grid.add(new JLabel(""));
+        LocalDate first = month.atDay(1);
+        int shift = first.getDayOfWeek().getValue() - 1; // Montag = 0
+        for (int i = 0; i < shift; i++) g.add(new JLabel(""));
 
         LocalDate today = LocalDate.now();
-        for (int d = 1; d <= aktuellerMonat.lengthOfMonth(); d++) {
-            LocalDate date = aktuellerMonat.atDay(d);
-            JButton btn = dayButton(date, today);
-            grid.add(btn);
+        for (int d = 1; d <= month.lengthOfMonth(); d++) {
+            LocalDate date = month.atDay(d);
+            JButton b = createDayButton(date, today);
+            g.add(b);
         }
-        while (grid.getComponentCount() % 7 != 0) grid.add(new JLabel(""));
-        return grid;
+        while (g.getComponentCount() % 7 != 0) g.add(new JLabel(""));
+        return g;
     }
 
-    /* ---------- UI‑Hilfsfunktionen ---------- */
+    /* -------- Button für einen Tag -------- */
+    private JButton createDayButton(LocalDate date, LocalDate today) {
+        JButton b = new RoundButton(String.valueOf(date.getDayOfMonth()));
+        b.setFocusPainted(false);
+        b.setContentAreaFilled(false);
+        b.setBackground(new Color(0, 0, 0, 0)); // transparent
 
+        /* Unterstrich, falls Termine existieren */
+        if (busyDays.contains(date)) {
+            b.setBorder(BUSY_BORDER);
+            b.setBorderPainted(true);
+        } else {
+            b.setBorder(null);
+        }
+
+        if (date.equals(today)) {
+            b.setBackground(PRIMARY);
+            b.setForeground(PRIMARY_TEXT);
+        } else if (date.getDayOfWeek() == DayOfWeek.SATURDAY ||
+                   date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            b.setForeground(WEEKEND_TXT);
+        }
+
+        /* Hover‑Effekt */
+        b.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (!date.equals(today)) b.setBackground(HOVER_BG);
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if (!date.equals(today)) b.setBackground(new Color(0, 0, 0, 0));
+            }
+        });
+
+        b.addActionListener(e -> onSelect.accept(date));
+        return b;
+    }
+
+    /* -------- Monat wechseln -------- */
+    private void changeMonth(int delta, JLabel title) {
+        month = month.plusMonths(delta);
+        title.setText(formatMonth(month));
+        onMonthChange.accept(month);
+    }
+
+    public void updateBusyDays(Set<LocalDate> newBusy) {
+        this.busyDays = newBusy;
+        remove(1);
+        add(buildGrid(), BorderLayout.CENTER);
+        revalidate(); repaint();
+    }
+
+    /* -------- Hilfsfunktionen -------- */
     private static String formatMonth(YearMonth ym) {
         return ym.getMonth().getDisplayName(TextStyle.FULL, Locale.getDefault()) + " " + ym.getYear();
     }
-
-    private JButton navButton(String txt) {
-        JButton b = new JButton(txt);
+    private JButton navBtn(String t) {
+        JButton b = new JButton(t);
         b.setBorderPainted(false);
         b.setFocusPainted(false);
         b.setContentAreaFilled(false);
@@ -89,69 +153,18 @@ public class CalendarView extends JPanel {
         return b;
     }
 
-    private JButton dayButton(LocalDate date, LocalDate today) {
-        JButton b = new RoundButton(String.valueOf(date.getDayOfMonth()));
-        b.setFocusPainted(false);
-        b.setBorderPainted(false);
-
-        // Farben
-        if (date.equals(today)) {
-            b.setBackground(PRIMARY);
-            b.setForeground(PRIMARY_TEXT);
-        } else {
-            b.setBackground(new Color(0,0,0,0));   // transparent
-            if (date.getDayOfWeek() == DayOfWeek.SATURDAY ||
-                date.getDayOfWeek() == DayOfWeek.SUNDAY) {
-                b.setForeground(WEEKEND_TXT);
-            }
-        }
-
-        b.addActionListener(e -> onDateSelected.accept(date));
-
-        // Hover‑Effekt
-        b.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                if (!date.equals(today)) b.setBackground(HOVER_BG);
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                if (!date.equals(today)) b.setBackground(new Color(0,0,0,0));
-            }
-        });
-        return b;
-    }
-
-    private void changeMonth(int delta, JLabel title) {
-        aktuellerMonat = aktuellerMonat.plusMonths(delta);
-        title.setText(formatMonth(aktuellerMonat));
-        remove(1);          // altes Grid
-        add(buildGrid(), BorderLayout.CENTER);
-        revalidate(); repaint();
-    }
-
-    /* ---------- Runder Button ---------- */
+    /* -------- runder Button -------- */
     static class RoundButton extends JButton {
-        RoundButton(String text) { super(text); setOpaque(false); }
-
-        @Override protected void paintComponent(Graphics g) {
+        RoundButton(String t) { super(t); setOpaque(false); }
+        protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                                RenderingHints.VALUE_ANTIALIAS_ON);
-
-            Shape round = new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 30, 30);
-
-            if (getModel().isArmed()) {
-                g2.setColor(getBackground().darker());
-            } else {
-                g2.setColor(getBackground());
-            }
-            g2.fill(round);
-            g2.dispose();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            Shape r = new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 30, 30);
+            g2.setColor(getModel().isArmed() ? getBackground().darker() : getBackground());
+            g2.fill(r); g2.dispose();
             super.paintComponent(g);
         }
-
-        @Override public void setBackground(Color bg) {
-            super.setBackground(bg);
-            setContentAreaFilled(false);
-        }
+        public void setBackground(Color c) { super.setBackground(c); setContentAreaFilled(false); }
     }
 }
+
