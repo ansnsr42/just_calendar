@@ -32,6 +32,7 @@ mvn exec:java         # launches the calendar
 - **Language:** Java 
 - **GUI Toolkit:** Swing
 - **Database:** SQLite
+- **Build:** Maven 
 
 ## 🗃 Database
 
@@ -46,71 +47,21 @@ The database consists of a single table, `events`, with the following columns:
 - **date** (TEXT): The date of the event (formatted as `YYYY-MM-DD`).
 - **time** (TEXT): The time of the event (formatted as `HH:MM`).
 - **description** (TEXT): A short description or additional details about the event.
----
-
-# 🧩 Planned Class Structure
-
-## `CalendarApp`
-
-- **Type:** Main class  
-- **Responsibilities:**
-  - Starts the application
-  - Initializes GUI and database setup
+- **recurrence** (TEXT):NONE(default)|DAILY|WEEKLY|MONTHLY|YEARLY
+- **until** (TEXT): optional end date
 
 ---
+## 🧩 Key Classes
 
-## `DatabaseManager`
-
-- **Type:** Utility class  
-- **Responsibilities:**
-  - Manage database connection
-  - Perform CRUD operations for events
-
-- **Planned Methods:**
-
-  ```java
-  void connect();
-  void addEvent(Event e);
-  List<Event> getEventsForDate(LocalDate date);
-  void deleteEvent(int id);
-  ```
-
----
-
-## `Event`
-
-- **Type:** Plain Old Java Object (POJO)  
-- **Fields:**
-
-  ```java
-  int id;
-  String title;
-  LocalDate date;
-  LocalTime time;
-  String description;
-  ```
-
-- **Responsibilities:** Stores event data
-
----
-
-## `EventDialog`
-
-- **Type:** GUI component (`JDialog`)  
-- **Responsibilities:**
-  - Input form for adding or editing an event
-  - Validate input and pass data to `DatabaseManager`
-
----
-
-## `CalendarView`
-
-- **Type:** GUI component (`JPanel`)  
-- **Responsibilities:**
-  - Display monthly calendar view
-  - Allow date selection and visualize events
-
----
+| Class              | Type            | Responsibility                                                                                 |
+|--------------------|-----------------|------------------------------------------------------------------------------------------------|
+| **`CalendarApp`**  | `main` class    | Boots the app, wires UI ↔ DB, handles search/filter, keeps the currently-selected date.        |
+| **`CalendarView`** | `JPanel`        | Renders the monthly grid, highlights busy days, emits selection callbacks.                     |
+| **`EventDialog`**  | `JDialog`       | Form to create/edit an event (incl. recurrence and optional end date).                         |
+| **`DatabaseManager`** | Utility     | JDBC connection management, CRUD operations, full-text search, recurrence expansion.           |
+| **`Event`**        | POJO            | Stores event data and implements `occursOn(LocalDate)` for recurrence calculation.             |
+| **`RecurrenceType`** | `enum`       | Defines **NONE / DAILY / WEEKLY / MONTHLY / YEARLY** repeat patterns.                          |
+| **`ReminderService`** | `Runnable`  | Background thread that pops up a Swing notification 5 minutes before each event.               |
 
 
 
