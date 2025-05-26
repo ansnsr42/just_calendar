@@ -5,7 +5,7 @@ import java.time.YearMonth;
 import java.util.*;
 
 /**
- * SQLite‑Zugriff: Verbindung, CRUD, Busy‑Day‑Abfrage.
+ * SQLite-Zugriff: Verbindung, CRUD, Busy-Day-Abfrage.
  */
 public class DatabaseManager {
 
@@ -15,7 +15,7 @@ public class DatabaseManager {
     /* ---------- Verbindung ---------- */
     public void connect() throws SQLException {
         try { Class.forName("org.sqlite.JDBC"); }
-        catch (ClassNotFoundException e) { throw new SQLException("SQLite‑Treiber fehlt!", e); }
+        catch (ClassNotFoundException e) { throw new SQLException("SQLite-Treiber fehlt!", e); }
 
         conn = DriverManager.getConnection(URL);
 
@@ -44,6 +44,22 @@ public class DatabaseManager {
         }
     }
 
+    public void updateEvent(Event ev) throws SQLException {
+        String sql = """
+            UPDATE events
+            SET title = ?, date = ?, time = ?, description = ?
+            WHERE id = ?
+        """;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, ev.getTitle());
+            ps.setString(2, ev.getDate().toString());
+            ps.setString(3, ev.getTime().toString());
+            ps.setString(4, ev.getDescription());
+            ps.setInt   (5, ev.getId());
+            ps.executeUpdate();
+        }
+    }
+
     public List<Event> getEventsForDate(LocalDate d) throws SQLException {
         String q = "SELECT * FROM events WHERE date = ? ORDER BY time";
         List<Event> list = new ArrayList<>();
@@ -69,7 +85,7 @@ public class DatabaseManager {
         }
     }
 
-    /* ---------- Busy‑Days eines Monats ---------- */
+    /* ---------- Busy-Days eines Monats ---------- */
     public Set<LocalDate> getEventDatesOfMonth(YearMonth m) throws SQLException {
         LocalDate first = m.atDay(1);
         LocalDate last  = m.atEndOfMonth();

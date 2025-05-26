@@ -1,54 +1,72 @@
 import com.formdev.flatlaf.FlatLightLaf;
+
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.sql.SQLException;
 import java.time.*;
 import java.util.Set;
 
 public class CalendarApp {
 
-    private static DatabaseManager db;
-    private static CalendarView monthView;
-    private static JTextArea dayArea;
-    private static LocalDate selectedDate;
+    /* ---------- Felder ---------- */
+    static DatabaseManager db;
+    static CalendarView    monthView;
 
+    static DefaultListModel<Event> dayModel;
+    static JList<Event>            dayList;
+
+    static LocalDate selectedDate;
+    static JFrame    frame;
+
+    /* ---------- Einstieg ---------- */
     public static void main(String[] args) {
         FlatLightLaf.setup();
         SwingUtilities.invokeLater(() -> {
             db = new DatabaseManager();
-            try { db.connect(); } catch (SQLException ex) { showError("DB‑Verbindung fehlgeschlagen:\n" + ex); }
+            try { db.connect(); }
+            catch (SQLException ex) { showError("DB-Verbindung fehlgeschlagen:\n" + ex); }
+
             createAndShowGUI();
         });
     }
 
+    /* ---------- GUI-Aufbau ---------- */
     private static void createAndShowGUI() {
-        JFrame frame = new JFrame("Java‑Kalender");
+        frame = new JFrame("Java-Kalender");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(900, 600);
         frame.setLayout(new BorderLayout());
 
-        /* Tagesansicht */
-        dayArea = new JTextArea("Wähle links ein Datum…");
-        dayArea.setEditable(false);
-        dayArea.setLineWrap(true);
+        /* Tagesansicht: JList statt JTextArea */
+        dayModel = new DefaultListModel<>();
+        dayList  = new JList<>(dayModel);
+        dayList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        dayList.setCellRenderer((lst, ev, i, sel, foc) -> new JLabel(ev.toString()));
+        dayList.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) editSelectedEvent();
+            }
+        });
+        dayList.setComponentPopupMenu(buildPopup());
 
         /* Monatsansicht */
-        YearMonth ym = YearMonth.now();
+        YearMonth ym   = YearMonth.now();
         Set<LocalDate> busy = Set.of();
         try { busy = db.getEventDatesOfMonth(ym); } catch (SQLException ignored) {}
 
         monthView = new CalendarView(
-            ym,
-            busy,
-            date -> { selectedDate = date; refreshDayView(date); },
-            newMonth -> {
-                try {
-                    Set<LocalDate> b = db.getEventDatesOfMonth(newMonth);
-                    monthView.updateBusyDays(b);
-                } catch (SQLException ex) {
-                    showError("Fehler beim Laden der Monatsdaten:\n" + ex.getMessage());
-                }
-            });
+                ym,
+                busy,
+                date -> { selectedDate = date; refreshDayView(date); },
+                newMonth -> {
+                    try {
+                        monthView.updateBusyDays(db.getEventDatesOfMonth(newMonth));
+                    } catch (SQLException ex) {
+                        showError("Fehler beim Laden der Monatsdaten:\n" + ex.getMessage());
+                    }
+                });
 
         /* rechte Spalte */
         JButton addBtn = new JButton("Neuer Termin");
@@ -57,8 +75,8 @@ public class CalendarApp {
         JPanel right = new JPanel(new BorderLayout(0, 10));
         right.setPreferredSize(new Dimension(280, 0));
         right.add(new JLabel("Tagesansicht", SwingConstants.CENTER), BorderLayout.NORTH);
-        right.add(new JScrollPane(dayArea), BorderLayout.CENTER);
-        right.add(addBtn, BorderLayout.SOUTH);
+        right.add(new JScrollPane(dayList),                          BorderLayout.CENTER);
+        right.add(addBtn,                                            BorderLayout.SOUTH);
 
         frame.add(monthView, BorderLayout.CENTER);
         frame.add(right,     BorderLayout.EAST);
@@ -66,58 +84,88 @@ public class CalendarApp {
         frame.setVisible(true);
     }
 
-    /* ---------- Helper‑Methoden ---------- */
+    /* ---------- Helper ---------- */
 
-    private static void refreshDayView(LocalDate date) {
+    /** Tagesliste füllen */
+    static void refreshDayView(LocalDate date) {
+        dayModel.clear();
         try {
-            var events = db.getEventsForDate(date);
-            if (events.isEmpty()) {
-                dayArea.setText("Keine Termine am " + date + ".");
-            } else {
-                var sb = new StringBuilder("Termine am ").append(date).append(":\n\n");
-                events.forEach(ev -> sb.append(ev).append("\n"));
-                dayArea.setText(sb.toString());
-            }
+            db.getEventsForDate(date).forEach(dayModel::addElement);
         } catch (SQLException ex) {
             showError("Fehler beim Laden der Termine:\n" + ex.getMessage());
         }
     }
 
+    /** Dialog für neuen Termin */
     private static void quickAddDialog() {
         if (selectedDate == null) {
             showError("Bitte zuerst ein Datum auswählen.");
             return;
         }
-        JTextField titleF = new JTextField();
-        JTextField timeF  = new JTextField("HH:MM");
-        JTextField descF  = new JTextField();
-
-        JPanel panel = new JPanel(new GridLayout(0, 1, 4, 4));
-        panel.add(new JLabel("Titel:"));            panel.add(titleF);
-        panel.add(new JLabel("Uhrzeit (HH:MM):"));  panel.add(timeF);
-        panel.add(new JLabel("Beschreibung:"));     panel.add(descF);
-
-        int res = JOptionPane.showConfirmDialog(null, panel,
-                "Neuer Termin am " + selectedDate, JOptionPane.OK_CANCEL_OPTION);
-        if (res == JOptionPane.OK_OPTION) {
-            try {
-                var ev = new Event(
-                        titleF.getText().strip(),
-                        selectedDate,
-                        LocalTime.parse(timeF.getText().strip()),
-                        descF.getText().strip());
-                db.addEvent(ev);
-                refreshDayView(selectedDate);
-                // Busy‑Punkt updaten
-                monthView.updateBusyDays(db.getEventDatesOfMonth(YearMonth.from(selectedDate)));
-            } catch (Exception ex) {
-                showError("Termin konnte nicht gespeichert werden:\n" + ex.getMessage());
-            }
+        Event neu = EventDialog.show(frame, null);
+        if (neu == null) return;
+        try {
+            db.addEvent(neu);
+            refreshDayView(selectedDate);
+            monthView.updateBusyDays(db.getEventDatesOfMonth(
+                    YearMonth.from(selectedDate)));
+        } catch (SQLException ex) {
+            showError("Termin konnte nicht gespeichert werden:\n" + ex.getMessage());
         }
     }
 
-    private static void showError(String msg) {
-        JOptionPane.showMessageDialog(null, msg, "Fehler", JOptionPane.ERROR_MESSAGE);
+    /** Termin bearbeiten (Doppelklick oder Kontextmenü) */
+    private static void editSelectedEvent() {
+        Event ev = dayList.getSelectedValue();
+        if (ev == null) return;
+
+        Event edited = EventDialog.show(frame, ev);
+        if (edited == null) return;
+
+        try {
+            db.updateEvent(edited);
+            refreshDayView(selectedDate);
+            monthView.updateBusyDays(db.getEventDatesOfMonth(
+                    YearMonth.from(selectedDate)));
+        } catch (SQLException ex) {
+            showError("Aktualisieren fehlgeschlagen:\n" + ex.getMessage());
+        }
+    }
+
+    /** Termin löschen (Kontextmenü) */
+    private static void deleteSelectedEvent() {
+        Event ev = dayList.getSelectedValue();
+        if (ev == null) return;
+
+        int res = JOptionPane.showConfirmDialog(frame,
+                "Termin wirklich löschen?\n" + ev,
+                "Löschen bestätigen", JOptionPane.YES_NO_OPTION);
+        if (res != JOptionPane.YES_OPTION) return;
+
+        try {
+            db.deleteEvent(ev.getId());
+            refreshDayView(selectedDate);
+            monthView.updateBusyDays(
+                    db.getEventDatesOfMonth(YearMonth.from(selectedDate)));
+        } catch (SQLException ex) {
+            showError("Löschen fehlgeschlagen:\n" + ex.getMessage());
+        }
+    }
+
+    /** Kontextmenü */
+    private static JPopupMenu buildPopup() {
+        JPopupMenu pm = new JPopupMenu();
+        JMenuItem edit = new JMenuItem("Bearbeiten…");
+        JMenuItem del  = new JMenuItem("Löschen");
+        edit.addActionListener(e -> editSelectedEvent());
+        del .addActionListener(e -> deleteSelectedEvent());
+        pm.add(edit); pm.add(del);
+        return pm;
+    }
+
+    static void showError(String msg) {
+        JOptionPane.showMessageDialog(frame, msg, "Fehler",
+                                      JOptionPane.ERROR_MESSAGE);
     }
 }
 

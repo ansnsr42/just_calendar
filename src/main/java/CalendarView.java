@@ -22,7 +22,6 @@ public class CalendarView extends JPanel {
     private static final Color WEEKEND_TXT  = new Color(0x9CA3AF);
     private static final Color UNDERLINE    = new Color(0xEF4444);   // Rot
 
-    /* Unterstrich‑Border vorbereiten */
     private static final Border BUSY_BORDER =
             BorderFactory.createMatteBorder(0, 0, 2, 0, UNDERLINE);
 
@@ -94,9 +93,8 @@ public class CalendarView extends JPanel {
         JButton b = new RoundButton(String.valueOf(date.getDayOfMonth()));
         b.setFocusPainted(false);
         b.setContentAreaFilled(false);
-        b.setBackground(new Color(0, 0, 0, 0)); // transparent
+        b.setBackground(new Color(0, 0, 0, 0));
 
-        /* Unterstrich, falls Termine existieren */
         if (busyDays.contains(date)) {
             b.setBorder(BUSY_BORDER);
             b.setBorderPainted(true);
@@ -112,7 +110,6 @@ public class CalendarView extends JPanel {
             b.setForeground(WEEKEND_TXT);
         }
 
-        /* Hover‑Effekt */
         b.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 if (!date.equals(today)) b.setBackground(HOVER_BG);
@@ -134,7 +131,7 @@ public class CalendarView extends JPanel {
     }
 
     public void updateBusyDays(Set<LocalDate> newBusy) {
-        this.busyDays = newBusy;
+        busyDays = newBusy;
         remove(1);
         add(buildGrid(), BorderLayout.CENTER);
         revalidate(); repaint();
