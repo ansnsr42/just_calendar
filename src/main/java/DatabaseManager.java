@@ -9,14 +9,12 @@ public class DatabaseManager {
     private static final String URL = "jdbc:sqlite:calendar.db";
     private Connection conn;
 
-    /* ---------- Verbindung + Migration ---------- */
+    /* ---------- Verbindung & Migration (unverändert) ---------- */
     public void connect() throws SQLException {
         try { Class.forName("org.sqlite.JDBC"); }
         catch (ClassNotFoundException e) { throw new SQLException("SQLite-Treiber fehlt!", e); }
-
         conn = DriverManager.getConnection(URL);
 
-        // Neuinstallation
         String create = """
             CREATE TABLE IF NOT EXISTS events (
               id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,7 +28,6 @@ public class DatabaseManager {
         """;
         try (Statement st = conn.createStatement()) { st.execute(create); }
 
-        // Migration alter DB → Spalten ergänzen
         try (Statement st = conn.createStatement()) {
             st.execute("ALTER TABLE events ADD COLUMN recurrence TEXT DEFAULT 'NONE'");
         } catch (SQLException ignored) { }
@@ -39,7 +36,7 @@ public class DatabaseManager {
         } catch (SQLException ignored) { }
     }
 
-    /* ---------- CRUD ---------- */
+    /* ---------- CRUD (unverändert) ---------- */
     public void addEvent(Event ev) throws SQLException {
         String q = """
             INSERT INTO events(title,date,time,description,recurrence,until)
@@ -70,7 +67,30 @@ public class DatabaseManager {
         }
     }
 
-    /* ---------- Occurrence-Abfragen ---------- */
+    /* ---------- Suche (NEU) ---------- */
+    public List<Event> searchEvents(String term) throws SQLException {
+        String q = """
+            SELECT * FROM events
+            WHERE LOWER(title)       LIKE ?
+               OR LOWER(description) LIKE ?
+            ORDER BY date, time
+        """;
+        String pat = "%" + term.toLowerCase() + "%";
+        List<Event> list = new ArrayList<>();
+
+        try (PreparedStatement ps = conn.prepareStatement(q)) {
+            ps.setString(1, pat);
+            ps.setString(2, pat);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
+            }
+        }
+        return list;
+    }
+
+    /* ---------- Occurrence-Logik (unverändert) ---------- */
     public List<Event> getOccurrencesForDate(LocalDate d) throws SQLException {
         List<Event> list = new ArrayList<>();
         for (Event ev : getAllEvents())
@@ -81,8 +101,7 @@ public class DatabaseManager {
 
     public Set<LocalDate> getEventDatesOfMonth(YearMonth m) throws SQLException {
         Set<LocalDate> set = new HashSet<>();
-        LocalDate first = m.atDay(1);
-        LocalDate last  = m.atEndOfMonth();
+        LocalDate first = m.atDay(1), last = m.atEndOfMonth();
         for (Event ev : getAllEvents()) {
             LocalDate cur = first;
             while (!cur.isAfter(last)) {
@@ -99,19 +118,21 @@ public class DatabaseManager {
         List<Event> list = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(q);
              ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                list.add(new Event(
-                        rs.getInt("id"),
-                        rs.getString("title"),
-                        LocalDate.parse(rs.getString("date")),
-                        LocalTime.parse(rs.getString("time")),
-                        rs.getString("description"),
-                        RecurrenceType.fromDb(rs.getString("recurrence")),
-                        rs.getString("until") == null ? null : LocalDate.parse(rs.getString("until"))
-                ));
-            }
+            while (rs.next()) list.add(mapRow(rs));
         }
         return list;
+    }
+
+    private Event mapRow(ResultSet rs) throws SQLException {
+        return new Event(
+                rs.getInt("id"),
+                rs.getString("title"),
+                LocalDate.parse(rs.getString("date")),
+                LocalTime.parse(rs.getString("time")),
+                rs.getString("description"),
+                RecurrenceType.fromDb(rs.getString("recurrence")),
+                rs.getString("until") == null ? null : LocalDate.parse(rs.getString("until"))
+        );
     }
 
     private void bindEvent(PreparedStatement ps, Event ev) throws SQLException {
