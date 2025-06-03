@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Just Calendar – Feature Guide</title>
+  <style>
+    body {
+      font-family: system-ui, Helvetica, Arial, sans-serif;
+      margin: 0;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    header {
+      background: #3B82F6;
+      color: #fff;
+      padding: 2rem 1.5rem;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+
+    main {
+      padding: 1.5rem;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h2 {
+      margin-top: 2.5rem;
+      color: #1F2937;
+    }
+
+    h3 {
+      margin-top: 1.5rem;
+    }
+
+    figure {
+      margin: 1.5rem 0;
+      text-align: center;
+    }
+
+    figure img {
+      max-width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    figure figcaption {
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 0.4rem;
+    }
+
+    code {
+      background: #F3F4F6;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .screenshot-placeholder {
+      width: 100%;
+      height: 450px;
+      border: 2px dashed #bbb;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-style: italic;
+    }
+
+    ul.feature-list {
+      list-style: disc;
+      margin-left: 1.2rem;
+    }
+
+    footer {
+      margin: 3rem 0 1rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #888;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Just Calendar — User Guide</h1>
+  </header>
+  <main>
+    <p><strong>Just Calendar</strong> is a lightweight desktop calendar application built with Java 17 and Swing. It
+      stores events locally in an SQLite file and provides a modern FlatLaf interface. This guide explains <em>how to
+        use each feature</em> so that new users can be productive quickly. Screenshot placeholders are included—replace
+      them with real images later.</p>
+
+    <!-- 1 ------------------------------------------------------------------>
+    <h2>1. Main Window Overview</h2>
+    <figure>
+      <div class="screenshot-placeholder">
+        <picture><img src="img/main.png" width="600" height="430 " alt="Screenshot: main application window">
+        </picture>
+      </div>
+      <figcaption>Month grid (left) · Day / search panel (right)</figcaption>
+    </figure>
+    <h3>Key Elements</h3>
+    <ul class="feature-list">
+      <li><strong>Month Grid</strong> – click any day number to select it. Use <code>&lt;</code> / <code>&gt;</code>
+        arrows to switch months.</li>
+      <li><strong>Busy‑Day Marker</strong> – a red underline indicates at least one event on that day.</li>
+      <li><strong>Day List</strong> – shows all events for the selected date (or search results).</li>
+      <li><strong>Live Search</strong> – start typing in the search field (minimum 2 characters) to filter by
+        title/description.</li>
+      <li><strong>New Event Button</strong> – opens the event dialog pre‑filled with the currently selected date.</li>
+    </ul>
+
+    <!-- 2 ------------------------------------------------------------------>
+    <h2>2. Creating an Event</h2>
+    <figure>
+      <div class="screenshot-placeholder">
+        <picture><img src="img/new_event.png" width="600" height="430 " alt="Screenshot: main application window">
+        </picture>
+      </div>
+      <figcaption>Event dialog for adding a new entry</figcaption>
+    </figure>
+    <ol>
+      <li>Select the desired day in the month grid.</li>
+      <li>Click <em>New Event</em> (bottom‑right).</li>
+      <li>Fill in <strong>Title</strong>, <strong>Time</strong> (<code>HH:MM</code>), optional description.</li>
+      <li>Choose a <strong>Recurrence</strong> pattern and (optional) <strong>Until</strong> date.</li>
+      <li>Press <kbd>OK</kbd>. The event appears in the day list and the day gets an underline.</li>
+    </ol>
+
+    <figure>
+      <div class="screenshot-placeholder">
+        <picture><img src="img/new_event2.png" width="600" height="430 " alt="Screenshot: main application window">
+        </picture>
+      </div>
+      <figcaption>A new entry</figcaption>
+    </figure>
+
+    <!-- 3 ------------------------------------------------------------------>
+    <h2>3. Recurring (Series) Events</h2>
+    <figure>
+      <picture>
+        <img src="./img/recurrence_settings.png" width="600" height="400" alt="Recurrence settings" />
+      </picture>
+      <figcaption>Select a recurrence rule and optional end date</figcaption>
+    </figure>
+    <p>Just Calendar supports five recurrence patterns:</p>
+    <ul class="feature-list">
+      <li><code>None</code> – one‑time event.</li>
+      <li><code>Daily</code> – repeats every day at the same time.</li>
+      <li><code>Weekly</code> – repeats every seven days (same weekday).</li>
+      <li><code>Monthly</code> – repeats on the same calendar day each month.</li>
+      <li><code>Yearly</code> – repeats on the same month/day each year.</li>
+    </ul>
+    <p>Optionally set an <strong>Until</strong> date to stop the series. Recurring events are expanded on‑the‑fly: the
+      month view shows busy markers for each occurrence, and reminders trigger for every generated instance.</p>
+    <figure>
+      <picture>
+        <img src="./img/recurring_marker.png" width="850" height="430" alt="Month view with recurring busy markers" />
+      </picture>
+      <figcaption>Busy markers for a weekly series across the month</figcaption>
+    </figure>
+
+
+
+    <!-- 4 ------------------------------------------------------------------>
+    <h2>4. Editing or Deleting Events</h2>
+    <figure>
+      <div class="screenshot-placeholder">
+        <picture><img src="img/change.png" width="600" height="430 " alt="Screenshot: main application window">
+        </picture>
+      </div>
+      <figcaption>Edit or delete via double‑click or context menu</figcaption>
+    </figure>
+    <ul class="feature-list">
+      <li><strong>Edit</strong> – double‑click a list entry (or pick <em>Edit…</em> from right‑click menu). Change
+        fields and save. Be really sure that you have selected the event otherwise nothing will happen.</li>
+      <li><strong>Delete</strong> – right‑click the entry and choose <em>Delete</em>; confirm when asked. Be really sure
+        that you have selected the event otherwise nothing will happen.</li>
+      <li>The busy underline is updated automatically after edits or deletions.</li>
+    </ul>
+
+    <!-- 5 ------------------------------------------------------------------>
+    <h2>5. Live Search</h2>
+    <figure>
+      <div class="screenshot-placeholder">
+        <picture><img src="img/search.png" width="600" height="430 " alt="Screenshot: main application window">
+        </picture>
+      </div>
+      <figcaption>Results list ordered chronologically</figcaption>
+    </figure>
+    <p>Type at least two characters; results update instantly. Editing/deleting a result works the same way as in normal
+      day view. Clear the search box to return to the selected date.</p>
+
+    <!-- 6 ------------------------------------------------------------------>
+    <h2>6. Reminder Pop‑ups</h2>
+    <figure>
+      <div class="screenshot-placeholder">
+        <picture><img src="img/reminder.png" width="600" height="430 " alt="Screenshot: main application window">
+        </picture>
+
+      </div>
+      <figcaption>Appears 5 minutes before start time</figcaption>
+    </figure>
+    <p>Every 30 seconds the background service checks for events starting within the next five minutes. Each event
+      triggers only one pop‑up per day.</p>
+
+    <!-- 7 ------------------------------------------------------------------>
+    <h2>7. Persistence &amp; Technology Stack</h2>
+    <ul class="feature-list">
+      <li><strong>Language / GUI:</strong> Java 17 · Swing · FlatLaf 3.4</li>
+      <li><strong>Database:</strong> local SQLite file (<code>calendar.db</code>) via <code>sqlite‑jdbc</code></li>
+      <li><strong>Build Tool:</strong> Maven 3.9 – run with <code>mvn clean compile exec:java</code></li>
+      <li><strong>Repo:</strong> <a
+          href="https://github.com/ansnsr42/just_calendar">github.com/ansnsr42/just_calendar</a></li>
+    </ul>
+
+
+  </main>
+  <footer>
+    Just Calendar documentation · last update: 2025/06/03
+  </footer>
+</body>
+
+</html>
