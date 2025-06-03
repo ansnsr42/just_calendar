@@ -4,17 +4,17 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 /**
- * Dialog zum Anlegen oder Bearbeiten eines Termins.
- *  • ev == null  →  neuer Termin
- *  • ev != null  →  vorhandenen Termin bearbeiten
- * Liefert das erzeugte/aktualisierte Event oder null bei Abbruch.
+ * Dialog for creating or editing an event.
+ *  • ev == null  →  create a new event
+ *  • ev != null  →  edit an existing event
+ * Returns the new / updated Event, or null if the user cancels.
  */
 public class EventDialog {
 
     public static Event show(Window parent, Event ev) {
         boolean isNew = (ev == null);
 
-        /* Eingabefelder vorbereiten */
+        /* input fields */
         JTextField titleF = new JTextField(isNew ? "" : ev.getTitle());
         JTextField timeF  = new JTextField(isNew ? "HH:MM" : ev.getTime().toString());
         JTextField descF  = new JTextField(isNew ? "" : ev.getDescription());
@@ -25,39 +25,39 @@ public class EventDialog {
         JTextField untilF = new JTextField(
                 isNew || ev.getUntil() == null ? "" : ev.getUntil().toString());
 
-        /* Layout */
+        /* form layout */
         JPanel p = new JPanel(new GridLayout(0, 1, 4, 4));
-        p.add(new JLabel("Titel:"));            p.add(titleF);
-        p.add(new JLabel("Uhrzeit (HH:MM):"));  p.add(timeF);
-        p.add(new JLabel("Beschreibung:"));     p.add(descF);
-        p.add(new JLabel("Wiederkehr:"));       p.add(recurC);
-        p.add(new JLabel("Bis (YYYY-MM-DD, optional):")); p.add(untilF);
+        p.add(new JLabel("Title:"));                 p.add(titleF);
+        p.add(new JLabel("Time (HH:MM):"));          p.add(timeF);
+        p.add(new JLabel("Description:"));           p.add(descF);
+        p.add(new JLabel("Recurrence:"));            p.add(recurC);
+        p.add(new JLabel("End date (YYYY-MM-DD, optional):")); p.add(untilF);
 
         int res = JOptionPane.showConfirmDialog(parent, p,
-                isNew ? "Neuer Termin" : "Termin bearbeiten",
+                isNew ? "New Event" : "Edit Event",
                 JOptionPane.OK_CANCEL_OPTION);
 
         if (res != JOptionPane.OK_OPTION) return null;
 
-        /* Eingaben validieren */
+        /* validate inputs */
         LocalTime t;
         try { t = LocalTime.parse(timeF.getText().strip()); }
-        catch (Exception ex) { error(parent, "Zeitformat HH:MM!"); return null; }
+        catch (Exception ex) { error(parent, "Time format must be HH:MM!"); return null; }
 
         LocalDate until = null;
         String untilTxt = untilF.getText().strip();
         if (!untilTxt.isEmpty()) {
             try { until = LocalDate.parse(untilTxt); }
-            catch (Exception ex) { error(parent, "Datumformat YYYY-MM-DD!"); return null; }
+            catch (Exception ex) { error(parent, "Date format must be YYYY-MM-DD!"); return null; }
         }
 
         RecurrenceType rec = (RecurrenceType) recurC.getSelectedItem();
 
-        /* Neues Event anlegen oder bestehendes aktualisieren */
+        /* create or update */
         if (isNew) {
             return new Event(
                     titleF.getText().strip(),
-                    CalendarApp.selectedDate,   // Startdatum = aktuell gewählter Tag
+                    CalendarApp.selectedDate,      // start date = currently selected day
                     t,
                     descF.getText().strip(),
                     rec,
@@ -73,7 +73,7 @@ public class EventDialog {
     }
 
     private static void error(Window w, String msg) {
-        JOptionPane.showMessageDialog(w, msg, "Eingabefehler",
+        JOptionPane.showMessageDialog(w, msg, "Input error",
                                       JOptionPane.ERROR_MESSAGE);
     }
 }

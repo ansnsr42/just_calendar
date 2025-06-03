@@ -4,17 +4,23 @@ import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.*;
 
+/**
+ * Handles the SQLite connection and all CRUD / query logic.
+ */
 public class DatabaseManager {
 
     private static final String URL = "jdbc:sqlite:calendar.db";
     private Connection conn;
 
-    /* ---------- Verbindung & Migration (unverändert) ---------- */
+    /* ---------- connection & one-time migrations ---------- */
     public void connect() throws SQLException {
         try { Class.forName("org.sqlite.JDBC"); }
-        catch (ClassNotFoundException e) { throw new SQLException("SQLite-Treiber fehlt!", e); }
+        catch (ClassNotFoundException e) {
+            throw new SQLException("SQLite driver missing!", e);
+        }
         conn = DriverManager.getConnection(URL);
 
+        // create table (first run) …
         String create = """
             CREATE TABLE IF NOT EXISTS events (
               id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,15 +34,16 @@ public class DatabaseManager {
         """;
         try (Statement st = conn.createStatement()) { st.execute(create); }
 
+        // … and add columns if the DB is older
         try (Statement st = conn.createStatement()) {
             st.execute("ALTER TABLE events ADD COLUMN recurrence TEXT DEFAULT 'NONE'");
-        } catch (SQLException ignored) { }
+        } catch (SQLException ignored) {}
         try (Statement st = conn.createStatement()) {
             st.execute("ALTER TABLE events ADD COLUMN until TEXT");
-        } catch (SQLException ignored) { }
+        } catch (SQLException ignored) {}
     }
 
-    /* ---------- CRUD (unverändert) ---------- */
+    /* ---------- CRUD ---------- */
     public void addEvent(Event ev) throws SQLException {
         String q = """
             INSERT INTO events(title,date,time,description,recurrence,until)
@@ -45,13 +52,16 @@ public class DatabaseManager {
         try (PreparedStatement ps = conn.prepareStatement(q, Statement.RETURN_GENERATED_KEYS)) {
             bindEvent(ps, ev);
             ps.executeUpdate();
-            try (ResultSet rs = ps.getGeneratedKeys()) { if (rs.next()) ev.setId(rs.getInt(1)); }
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) ev.setId(rs.getInt(1));
+            }
         }
     }
 
     public void updateEvent(Event ev) throws SQLException {
         String q = """
-            UPDATE events SET title=?,date=?,time=?,description=?,recurrence=?,until=?
+            UPDATE events
+            SET title=?,date=?,time=?,description=?,recurrence=?,until=?
             WHERE id=?
         """;
         try (PreparedStatement ps = conn.prepareStatement(q)) {
@@ -63,11 +73,12 @@ public class DatabaseManager {
 
     public void deleteEvent(int id) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("DELETE FROM events WHERE id=?")) {
-            ps.setInt(1, id); ps.executeUpdate();
+            ps.setInt(1, id);
+            ps.executeUpdate();
         }
     }
 
-    /* ---------- Suche (NEU) ---------- */
+    /* ---------- full-text search ---------- */
     public List<Event> searchEvents(String term) throws SQLException {
         String q = """
             SELECT * FROM events
@@ -82,15 +93,13 @@ public class DatabaseManager {
             ps.setString(1, pat);
             ps.setString(2, pat);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapRow(rs));
-                }
+                while (rs.next()) list.add(mapRow(rs));
             }
         }
         return list;
     }
 
-    /* ---------- Occurrence-Logik (unverändert) ---------- */
+    /* ---------- expand recurrences ---------- */
     public List<Event> getOccurrencesForDate(LocalDate d) throws SQLException {
         List<Event> list = new ArrayList<>();
         for (Event ev : getAllEvents())
@@ -99,6 +108,7 @@ public class DatabaseManager {
         return list;
     }
 
+    /** Busy-day set for one month (used by the red underline). */
     public Set<LocalDate> getEventDatesOfMonth(YearMonth m) throws SQLException {
         Set<LocalDate> set = new HashSet<>();
         LocalDate first = m.atDay(1), last = m.atEndOfMonth();
@@ -112,11 +122,10 @@ public class DatabaseManager {
         return set;
     }
 
-    /* ---------- Hilfsfunktionen ---------- */
+    /* ---------- helpers ---------- */
     private List<Event> getAllEvents() throws SQLException {
-        String q = "SELECT * FROM events";
         List<Event> list = new ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement(q);
+        try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM events");
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         }
@@ -135,6 +144,7 @@ public class DatabaseManager {
         );
     }
 
+    /** Bind an Event object to a prepared statement (common to insert & update). */
     private void bindEvent(PreparedStatement ps, Event ev) throws SQLException {
         ps.setString(1, ev.getTitle());
         ps.setString(2, ev.getDate().toString());
