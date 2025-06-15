@@ -65,15 +65,3 @@ The database consists of a single table, `events`, with the following columns:
 
 
 
-## 📋 Weekly Plan Overview
-
-| Week      | Milestone                         | Description                                                                  |
-|-----------|------------------------------------|------------------------------------------------------------------------------|
-| Week 1    | Project Kickoff & Planning         | Define goals, choose tools, set up development environment.                 |
-| Week 2    | GUI Structure (Swing)              | Create main window with `JFrame`, layout with `JPanel`, buttons, and label. |
-| Week 3    | Database Integration (SQLite)      | Create SQLite database, connect via JDBC, and create `events` table.        |
-| Week 4    | Event Model Class (`Event.java`)   | Implement the event data model class and test object creation.              |
-| Week 5    | Implement `DatabaseManager`        | Add methods to insert, fetch, update, and delete events from database.      |
-| Week 6    | Event Dialog (Swing Form)          | Create form dialog to input event data with validation.                     |
-| Week 7    | Display Events in Calendar View    | Show events for selected date in the main interface.                        |
-| Week 8    | Edit/Delete Events & Final Cleanup | Allow editing/deleting of events. Final testing and code cleanup.           |
